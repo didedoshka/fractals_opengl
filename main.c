@@ -8,23 +8,29 @@ const GLuint WIDTH = 1200, HEIGHT = 800;
 
 const char *vertexShaderSource =
     "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 0) in vec2 position;\n"
+    "out vec2 coordinates;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "   coordinates = position;\n"
+    "   gl_Position = vec4(position, 0.0f, 1.0f);\n"
     "}\0";
 const char *fragmentShaderSource =
     "#version 330 core\n"
-    "out vec4 FragColor;\n"
+    "in vec2 coordinates;\n"
+    "out vec4 color;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   color = vec4(coordinates, 0.0f, 1.0f);\n"
     "}\n\0";
 
 int main(void) {
-    printf("Starting GLFW context, OpenGL 3.3\n");
-
-    glfwInit();
+    if (glfwInit()) {
+        printf("Started GLFW context, OpenGL 3.3\n");
+    } else {
+        printf("Failed to start GLFW context\n");
+        return -1;
+    }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -34,13 +40,17 @@ int main(void) {
 
     GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
     glfwMakeContextCurrent(window);
-    if (window == NULL) {
+    if (window) {
+        printf("Created GLFW window\n");
+    } else {
         printf("Failed to create GLFW window\n");
         glfwTerminate();
         return -1;
     }
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        printf("Initialized OpenGL context\n");
+    } else {
         printf("Failed to initialize OpenGL context\n");
         return -1;
     }
@@ -52,11 +62,11 @@ int main(void) {
     // build and compile our shader program
     // ------------------------------------
     // vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
     // check for shader compile errors
-    int success;
+    GLint success;
     char infoLog[512];
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -65,7 +75,7 @@ int main(void) {
     }
 
     // fragment shader
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
     // check for shader compile errors
@@ -75,7 +85,7 @@ int main(void) {
         printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
     }
     // link shaders
-    unsigned int shaderProgram = glCreateProgram();
+    GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
@@ -91,12 +101,15 @@ int main(void) {
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,  // left
-        0.5f,  -0.5f, 0.0f,  // right
-        0.0f,  0.5f,  0.0f   // top
+        -1.0f, 1.0f,   // top left
+        -1.0f, -1.0f,  // bottom left
+        1.0f,  -1.0f,  // bottom right
+        -1.0f, 1.0f,   // top left
+        1.0f,  1.0f,   // top right
+        1.0f,  -1.0f,  // bottom right
     };
 
-    unsigned int VBO, VAO;
+    GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
@@ -105,10 +118,8 @@ int main(void) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-
-    unsigned int frames = 0;
 
     // Game loop
     while (!glfwWindowShouldClose(window)) {
@@ -117,7 +128,7 @@ int main(void) {
 
         // draw our first triangle
         glUseProgram(shaderProgram);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
         // glBindVertexArray(0); // no need to unbind it every time
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
