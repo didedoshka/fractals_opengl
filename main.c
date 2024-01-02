@@ -1,12 +1,15 @@
-#include <stdio.h>
-
 #include <glad/glad.h>
-
 #include <GLFW/glfw3.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+const unsigned int SHADER_MAX_SOURCE_SIZE = 1024;
+const unsigned int SHADER_MAX_LINE_SIZE = 180;
 const GLuint WIDTH = 1200, HEIGHT = 800;
 
-const char *vertexShaderSource =
+const char* vertexShaderSource =
     "#version 330 core\n"
     "layout (location = 0) in vec2 position;\n"
     "out vec2 coordinates;\n"
@@ -15,14 +18,24 @@ const char *vertexShaderSource =
     "   coordinates = position;\n"
     "   gl_Position = vec4(position, 0.0f, 1.0f);\n"
     "}\0";
-const char *fragmentShaderSource =
-    "#version 330 core\n"
-    "in vec2 coordinates;\n"
-    "out vec4 color;\n"
-    "void main()\n"
-    "{\n"
-    "   color = vec4(coordinates, 0.0f, 1.0f);\n"
-    "}\n\0";
+
+int load_shader_from_file(const char* path, char* res) {
+    FILE* file;
+    file = fopen(path, "r");
+    if (!file) {
+        return 0;
+    }
+
+    char buf[SHADER_MAX_LINE_SIZE];
+
+    while (fgets(buf, SHADER_MAX_LINE_SIZE, file)) {
+        strcat(res, buf);
+    }
+
+    fclose(file);
+
+    return 1;
+}
 
 int main(void) {
     if (glfwInit()) {
@@ -38,7 +51,7 @@ int main(void) {
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
     glfwMakeContextCurrent(window);
     if (window) {
         printf("Created GLFW window\n");
@@ -76,13 +89,21 @@ int main(void) {
 
     // fragment shader
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    char* fragmentShaderPath = "fragment_shader.glsl";
+    char* fragmentShaderSource;
+    fragmentShaderSource = malloc(SHADER_MAX_SOURCE_SIZE);
+    if (!load_shader_from_file(fragmentShaderPath, fragmentShaderSource)) {
+        printf("Couln't load %s\n", fragmentShaderPath);
+    }
+    printf("%s", fragmentShaderSource);
+    glShaderSource(fragmentShader, 1, (const char**)&fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
     // check for shader compile errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
         glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
         printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n%s\n", infoLog);
+        return -1;
     }
     // link shaders
     GLuint shaderProgram = glCreateProgram();
@@ -94,8 +115,10 @@ int main(void) {
     if (!success) {
         glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         printf("ERROR::SHADER::PROGRAM::LINKING_FAILED\n%s\n", infoLog);
+        return -1;
     }
     glDeleteShader(vertexShader);
+    free(fragmentShaderSource);
     glDeleteShader(fragmentShader);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
@@ -118,7 +141,7 @@ int main(void) {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // Game loop
