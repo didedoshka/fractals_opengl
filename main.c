@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <malloc/_malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,14 +20,15 @@ const char* vertexShaderSource =
     "   gl_Position = vec4(position, 0.0f, 1.0f);\n"
     "}\0";
 
-int load_shader_from_file(const char* path, char* res) {
+char* load_shader_from_file(const char* path) {
     FILE* file;
     file = fopen(path, "r");
     if (!file) {
-        return 0;
+        return NULL;
     }
 
     char buf[SHADER_MAX_LINE_SIZE];
+    char* res = malloc(SHADER_MAX_SOURCE_SIZE);
 
     while (fgets(buf, SHADER_MAX_LINE_SIZE, file)) {
         strcat(res, buf);
@@ -34,7 +36,7 @@ int load_shader_from_file(const char* path, char* res) {
 
     fclose(file);
 
-    return 1;
+    return res;
 }
 
 int main(void) {
@@ -90,13 +92,12 @@ int main(void) {
     // fragment shader
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     char* fragmentShaderPath = "fragment_shader.glsl";
-    char* fragmentShaderSource;
-    fragmentShaderSource = malloc(SHADER_MAX_SOURCE_SIZE);
-    if (!load_shader_from_file(fragmentShaderPath, fragmentShaderSource)) {
+    const char* fragmentShaderSource = load_shader_from_file(fragmentShaderPath);
+    if (!fragmentShaderSource) {
         printf("Couln't load %s\n", fragmentShaderPath);
+        return -1;
     }
-    printf("%s", fragmentShaderSource);
-    glShaderSource(fragmentShader, 1, (const char**)&fragmentShaderSource, NULL);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
     // check for shader compile errors
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
