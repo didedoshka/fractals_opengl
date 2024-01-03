@@ -1,6 +1,7 @@
 #version 330 core
 
 #define MAX_ITER 1000
+#define COLORS 30
 
 in vec2 coords;
 out vec4 color;
@@ -29,25 +30,31 @@ vec2 fractal_func(vec2 z, vec2 c) {
     return complex_add(complex_mult(z, z), c);
 }
 
-vec3 color_by_iter(int iter) {
-    float proportion = (1.0 * iter) / MAX_ITER;
+vec3 color_by_iter_orange(int iter) {
     vec3 base_color = vec3(1, 0.55, 0);
+    float proportion = (1.0 * iter) / COLORS;
     return base_color * (1 - proportion);
+}
+vec3 color_by_iter_rgb(int iter) {
+    if (iter%3 == 0) {
+        return vec3(1, 0, 0);
+    } else if (iter % 3 == 1) {
+        return vec3(0, 1, 0);
+    } else {
+        return vec3(0, 0, 3);
+    }
 }
 
 void main() {
     vec2 z = vec2(0, 0);
     vec2 camera_coords = (coords * 0.5 + vec2(0.5, 0.5)) * camera_width + camera_corner;
-    // vec2 camera_coords = vec2((coords.x * 0.5 + 0.5) * camera_width, coords.y * 0.5 + 0.5);
-    // vec2 camera_coords = coords;
     
     for (int i = 0; i < MAX_ITER; ++i) {
         z = fractal_func(z, camera_coords);
         if (complex_squared_abs(z) >= 4) {
-            color = vec4(color_by_iter(i + 1), 1);
+            color = vec4(color_by_iter_rgb(i + 1), 1);
             return;
         }
     }
-    color = vec4(color_by_iter(MAX_ITER), 1);
-    // color = vec4(coords, 0.0f, 1.0f);
+    color = vec4(0, 0, 0, 1);
 }
