@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-const unsigned int SHADER_MAX_SOURCE_SIZE = 1024;
+const unsigned int SHADER_MAX_SOURCE_SIZE = 1024 * 1024;
 const unsigned int SHADER_MAX_LINE_SIZE = 180;
-const GLuint WIDTH = 1200, HEIGHT = 800;
+const GLuint WIDTH = 900, HEIGHT = 900;
 
 const char* vertexShaderSource =
     "#version 330 core\n"
@@ -119,8 +119,8 @@ int main(void) {
         return -1;
     }
     glDeleteShader(vertexShader);
-    free(fragmentShaderSource);
     glDeleteShader(fragmentShader);
+    free(fragmentShaderSource);
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -145,18 +145,11 @@ int main(void) {
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    glUseProgram(shaderProgram);
     // Game loop
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw our first triangle
-        glUseProgram(shaderProgram);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        // glBindVertexArray(0); // no need to unbind it every time
 
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
