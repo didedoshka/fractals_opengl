@@ -56,7 +56,7 @@ int main(void) {
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "didedoshka's fractal", NULL, NULL);
     glfwMakeContextCurrent(window);
     if (window) {
         printf("Created GLFW window\n");
