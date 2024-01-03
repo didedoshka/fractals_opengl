@@ -39,7 +39,7 @@ char* load_shader_from_file(const char* path) {
     return res;
 }
 
-float cameraCorner[2] = {-2, -1.5};
+float cameraCorner[2] = {-2.2, -1.5};
 float cameraWidth = 3;
 
 int main(void) {

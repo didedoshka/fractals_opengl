@@ -1,7 +1,6 @@
 #version 330 core
 
-#define MAX_ITER 1000
-#define COLORS 30
+#define MAX_ITER 10000
 
 in vec2 coords;
 out vec4 color;
@@ -32,17 +31,44 @@ vec2 fractal_func(vec2 z, vec2 c) {
 
 vec3 color_by_iter_orange(int iter) {
     vec3 base_color = vec3(1, 0.55, 0);
-    float proportion = (1.0 * iter) / COLORS;
+    int colors_amount = 30;
+    float proportion = (1.0 * iter) / colors_amount;
     return base_color * (1 - proportion);
 }
 vec3 color_by_iter_rgb(int iter) {
-    if (iter%3 == 0) {
+    if (iter % 3 == 0) {
         return vec3(1, 0, 0);
     } else if (iter % 3 == 1) {
         return vec3(0, 1, 0);
     } else {
-        return vec3(0, 0, 3);
+        return vec3(0, 0, 1);
     }
+}
+
+vec3 color_by_iter_rainbow(int iter) {
+    const int CYCLE_COLORS = 22;
+    const int COLORS_AMOUNT = CYCLE_COLORS * 6 - 5;
+    float step_diff = 1.0 / (CYCLE_COLORS - 1);
+    vec3 colors[COLORS_AMOUNT];
+    for (int i = 0; i < CYCLE_COLORS; ++i) {
+        colors[0 * CYCLE_COLORS + i] = vec3(1.0, i * step_diff, 0.0);
+    }
+    for (int i = 1; i < CYCLE_COLORS; ++i) {
+        colors[1 * CYCLE_COLORS + i - 1] = vec3(1.0 - i * step_diff, 1.0, 0.0);
+    }
+    for (int i = 1; i < CYCLE_COLORS; ++i) {
+        colors[2 * CYCLE_COLORS - 1 + i - 1] = vec3(0.0, 1.0, i * step_diff);
+    }
+    for (int i = 1; i < CYCLE_COLORS; ++i) {
+        colors[3 * CYCLE_COLORS - 2 + i - 1] = vec3(0.0, 1.0 - i * step_diff, 1.0);
+    }
+    for (int i = 1; i < CYCLE_COLORS; ++i) {
+        colors[4 * CYCLE_COLORS - 3 + i - 1] = vec3(i * step_diff, 0.0, 1.0);
+    }
+    for (int i = 1; i < CYCLE_COLORS; ++i) {
+        colors[5 * CYCLE_COLORS - 4 + i - 1] = vec3(1.0, 0.0, 1.0 - i * step_diff);
+    }
+    return colors[iter % COLORS_AMOUNT];
 }
 
 void main() {
@@ -52,7 +78,7 @@ void main() {
     for (int i = 0; i < MAX_ITER; ++i) {
         z = fractal_func(z, camera_coords);
         if (complex_squared_abs(z) >= 4) {
-            color = vec4(color_by_iter_rgb(i + 1), 1);
+            color = vec4(color_by_iter_rainbow(i), 1);
             return;
         }
     }
