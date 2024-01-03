@@ -13,10 +13,10 @@ const GLuint WIDTH = 900, HEIGHT = 900;
 const char* vertexShaderSource =
     "#version 330 core\n"
     "layout (location = 0) in vec2 position;\n"
-    "out vec2 coordinates;\n"
+    "out vec2 coords;\n"
     "void main()\n"
     "{\n"
-    "   coordinates = position;\n"
+    "   coords = position;\n"
     "   gl_Position = vec4(position, 0.0f, 1.0f);\n"
     "}\0";
 
@@ -38,6 +38,9 @@ char* load_shader_from_file(const char* path) {
 
     return res;
 }
+
+float cameraCorner[2] = {-2, -1.5};
+float cameraWidth = 3;
 
 int main(void) {
     if (glfwInit()) {
@@ -146,6 +149,13 @@ int main(void) {
     glEnableVertexAttribArray(0);
 
     glUseProgram(shaderProgram);
+
+    GLint cameraCornerLocation = glGetUniformLocation(shaderProgram, "camera_corner");
+    GLint cameraWidthLocation = glGetUniformLocation(shaderProgram, "camera_width");
+
+    glUniform2f(cameraCornerLocation, cameraCorner[0], cameraCorner[1]);
+    glUniform1f(cameraWidthLocation, cameraWidth);
+
     // Game loop
     while (!glfwWindowShouldClose(window)) {
         glDrawArrays(GL_TRIANGLES, 0, 6);
