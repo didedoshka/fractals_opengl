@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 const unsigned int SHADER_MAX_SOURCE_SIZE = 1024 * 1024;
 const unsigned int SHADER_MAX_LINE_SIZE = 180;
@@ -41,6 +42,34 @@ char* load_shader_from_file(const char* path) {
 
 float cameraCorner[2] = {-2.2, -1.5};
 float cameraWidth = 3;
+float current_y_cursor_pos;
+float current_x_cursor_pos;
+char is_left_mouse_button_pressed;
+
+double screen_to_device_x_coordinate(double x) {
+    return (x / WIDTH) * 2 - 1;
+}
+
+double screen_to_device_y_coordinate(double y) {
+    return (y / HEIGHT) * 2 - 1;
+}
+
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    current_x_cursor_pos = fmax(-1.0, fmin(1.0, screen_to_device_x_coordinate(xpos)));
+    current_y_cursor_pos = fmax(-1.0, fmin(1.0, screen_to_device_y_coordinate(ypos)));
+    printf("cursor position x: %f y: %f\n", current_x_cursor_pos, current_y_cursor_pos);
+}
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            is_left_mouse_button_pressed = 1;
+        }
+        if (action == GLFW_RELEASE) {
+            is_left_mouse_button_pressed = 0;
+        }
+    }
+    printf("%d\n", is_left_mouse_button_pressed);
+}
 
 int main(void) {
     if (glfwInit()) {
@@ -76,6 +105,9 @@ int main(void) {
     GLint width, height;
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
+
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // build and compile our shader program
     // ------------------------------------
