@@ -40,8 +40,12 @@ char* load_shader_from_file(const char* path) {
     return res;
 }
 
-float cameraCorner[2] = {-2.2, -1.5};
-float cameraWidth = 3;
+#define CAMERA_CORNER_X -2.2
+#define CAMERA_CORNER_Y -1.5
+#define CAMERA_WIDTH 3
+
+float cameraCorner[2] = {CAMERA_CORNER_X, CAMERA_CORNER_Y};
+float cameraWidth = CAMERA_WIDTH;
 
 GLint cameraCornerLocation;
 GLint cameraWidthLocation;
@@ -63,12 +67,20 @@ GLint zoomRectangleRightLocation;
 GLint zoomRectangleDownLocation;
 GLint drawZoomRectangleLocation;
 
-double screen_to_device_x_coordinate(double x) {
+double screenToDeviceXCoordinate(double x) {
     return (x / WIDTH) * 2 - 1;
 }
 
-double screen_to_device_y_coordinate(double y) {
+double screenToDeviceYCoordinate(double y) {
     return -((y / HEIGHT) * 2 - 1);
+}
+
+float deviceToFractalXCoordinate(float x) {
+    return ((x + 1) / 2) * cameraWidth + cameraCorner[0];
+}
+
+float deviceToFractalYCoordinate(float y) {
+    return ((y + 1) / 2) * cameraWidth + cameraCorner[1];
 }
 
 void calculateZoomRectangleCoords() {
@@ -106,9 +118,9 @@ void sendZoomRectangleCoords() {
     glUniform1i(drawZoomRectangleLocation, drawZoomRectangle);
 }
 
-void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-    float currentXCursorPos = fmax(-1.0, fmin(1.0, screen_to_device_x_coordinate(xpos)));
-    float currentYCursorPos = fmax(-1.0, fmin(1.0, screen_to_device_y_coordinate(ypos)));
+void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
+    float currentXCursorPos = fmax(-1.0, fmin(1.0, screenToDeviceXCoordinate(xpos)));
+    float currentYCursorPos = fmax(-1.0, fmin(1.0, screenToDeviceYCoordinate(ypos)));
     if (!drawZoomRectangle) {
         zoomRectangleFirstX = currentXCursorPos;
         zoomRectangleFirstY = currentYCursorPos;
@@ -121,7 +133,17 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 
     printf("cursor position x: %f y: %f\n", currentXCursorPos, currentYCursorPos);
 }
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+
+void recalculateCamera() {
+    cameraCorner[0] = deviceToFractalXCoordinate(zoomRectangleLeft);
+    cameraCorner[1] = deviceToFractalYCoordinate(zoomRectangleDown);
+    cameraWidth *= (zoomRectangleRight - zoomRectangleLeft) / 2;
+
+    glUniform2f(cameraCornerLocation, cameraCorner[0], cameraCorner[1]);
+    glUniform1f(cameraWidthLocation, cameraWidth);
+}
+
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) {
             drawZoomRectangle = 1;
@@ -129,7 +151,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             zoomRectangleSecondY = zoomRectangleFirstY;
         }
         if (action == GLFW_RELEASE) {
-            // TODO: recalc camera corners and width
+            recalculateCamera();
             drawZoomRectangle = 0;
             // if user wants to make another zoom from the spot he just finished
             zoomRectangleFirstX = zoomRectangleSecondX;
@@ -138,6 +160,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         calculateZoomRectangleCoords();
         sendZoomRectangleCoords();
         printf("%d\n", drawZoomRectangle);
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (action == GLFW_RELEASE) {
+            cameraCorner[0] = CAMERA_CORNER_X;
+            cameraCorner[1] = CAMERA_CORNER_Y;
+            cameraWidth = CAMERA_WIDTH;
+            glUniform2f(cameraCornerLocation, cameraCorner[0], cameraCorner[1]);
+            glUniform1f(cameraWidthLocation, cameraWidth);
+        }
     }
 }
 
@@ -176,8 +206,8 @@ int main(void) {
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     // build and compile our shader program
     // ------------------------------------

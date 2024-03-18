@@ -1,6 +1,6 @@
 #version 330 core
 
-#define MAX_ITER 100
+#define MAX_ITER 1000
 #define LIGHT_COEFF vec4(0.3, 0.3, 0.3, 0.0)
 
 in vec2 coords;
@@ -53,7 +53,7 @@ vec3 color_by_iter_rgb(int iter) {
 }
 
 vec3 color_by_iter_rainbow(int iter) {
-    const int CYCLE_COLORS = 10;
+    const int CYCLE_COLORS = 20;
     const int COLORS_AMOUNT = CYCLE_COLORS * 6 - 5;
     float step_diff = 1.0 / (CYCLE_COLORS - 1);
     vec3 colors[COLORS_AMOUNT];
