@@ -1,12 +1,19 @@
 #version 330 core
 
-#define MAX_ITER 10000
+#define MAX_ITER 100
+#define LIGHT_COEFF vec4(0.3, 0.3, 0.3, 0.0)
 
 in vec2 coords;
 out vec4 color;
 
 uniform vec2 camera_corner;
 uniform float camera_width;
+
+uniform float zoom_rectangle_left_x;
+uniform float zoom_rectangle_up_y;
+uniform float zoom_rectangle_right_x;
+uniform float zoom_rectangle_down_y;
+uniform bool draw_zoom_rectangle;
 
 vec2 complex_add(vec2 a, vec2 b) {
     return a + b;
@@ -46,7 +53,7 @@ vec3 color_by_iter_rgb(int iter) {
 }
 
 vec3 color_by_iter_rainbow(int iter) {
-    const int CYCLE_COLORS = 22;
+    const int CYCLE_COLORS = 10;
     const int COLORS_AMOUNT = CYCLE_COLORS * 6 - 5;
     float step_diff = 1.0 / (CYCLE_COLORS - 1);
     vec3 colors[COLORS_AMOUNT];
@@ -71,16 +78,26 @@ vec3 color_by_iter_rainbow(int iter) {
     return colors[iter % COLORS_AMOUNT];
 }
 
-void main() {
+vec4 calculate_color_for_coordinates(vec2 camera_coords) {
     vec2 z = vec2(0, 0);
-    vec2 camera_coords = (coords * 0.5 + vec2(0.5, 0.5)) * camera_width + camera_corner;
-    
     for (int i = 0; i < MAX_ITER; ++i) {
         z = fractal_func(z, camera_coords);
         if (complex_squared_abs(z) >= 4) {
-            color = vec4(color_by_iter_rainbow(i), 1);
-            return;
+            return vec4(color_by_iter_rainbow(i), 1);
         }
     }
-    color = vec4(0, 0, 0, 1);
+    return vec4(0, 0, 0, 1);
+}
+
+void main() {
+    vec2 camera_coords = (coords * 0.5 + vec2(0.5, 0.5)) * camera_width + camera_corner;
+
+    color = calculate_color_for_coordinates(camera_coords);
+
+    if (draw_zoom_rectangle) {
+        if (zoom_rectangle_left_x <= coords[0] && coords[0] <= zoom_rectangle_right_x && \
+            zoom_rectangle_down_y <= coords[1] && coords[1] <= zoom_rectangle_up_y) {
+            color += LIGHT_COEFF;
+        }
+    }
 }

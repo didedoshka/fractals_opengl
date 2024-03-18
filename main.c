@@ -42,33 +42,103 @@ char* load_shader_from_file(const char* path) {
 
 float cameraCorner[2] = {-2.2, -1.5};
 float cameraWidth = 3;
-float current_y_cursor_pos;
-float current_x_cursor_pos;
-char is_left_mouse_button_pressed;
+
+GLint cameraCornerLocation;
+GLint cameraWidthLocation;
+
+float zoomRectangleFirstX;
+float zoomRectangleFirstY;
+float zoomRectangleSecondX;
+float zoomRectangleSecondY;
+float zoomRectangleLeft;
+float zoomRectangleUp;
+float zoomRectangleRight;
+float zoomRectangleDown;
+
+char drawZoomRectangle = 0;
+
+GLint zoomRectangleLeftLocation;
+GLint zoomRectangleUpLocation;
+GLint zoomRectangleRightLocation;
+GLint zoomRectangleDownLocation;
+GLint drawZoomRectangleLocation;
 
 double screen_to_device_x_coordinate(double x) {
     return (x / WIDTH) * 2 - 1;
 }
 
 double screen_to_device_y_coordinate(double y) {
-    return (y / HEIGHT) * 2 - 1;
+    return -((y / HEIGHT) * 2 - 1);
+}
+
+void calculateZoomRectangleCoords() {
+    float firstX = zoomRectangleFirstX;
+    float firstY = zoomRectangleFirstY;
+    float secondX = zoomRectangleSecondX;
+    float secondY = zoomRectangleSecondY;
+
+    float width = secondX - firstX;
+    float height = secondY - firstY;
+
+    float size = fminf(fabsf(width), fabsf(height));
+
+    if (width < 0) {
+        zoomRectangleLeft = firstX - size;
+        zoomRectangleRight = firstX;
+    } else {
+        zoomRectangleLeft = firstX;
+        zoomRectangleRight = firstX + size;
+    }
+    if (height < 0) {
+        zoomRectangleDown = firstY - size;
+        zoomRectangleUp = firstY;
+    } else {
+        zoomRectangleDown = firstY;
+        zoomRectangleUp = firstY + size;
+    }
+}
+
+void sendZoomRectangleCoords() {
+    glUniform1f(zoomRectangleLeftLocation, zoomRectangleLeft);
+    glUniform1f(zoomRectangleRightLocation, zoomRectangleRight);
+    glUniform1f(zoomRectangleDownLocation, zoomRectangleDown);
+    glUniform1f(zoomRectangleUpLocation, zoomRectangleUp);
+    glUniform1i(drawZoomRectangleLocation, drawZoomRectangle);
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-    current_x_cursor_pos = fmax(-1.0, fmin(1.0, screen_to_device_x_coordinate(xpos)));
-    current_y_cursor_pos = fmax(-1.0, fmin(1.0, screen_to_device_y_coordinate(ypos)));
-    printf("cursor position x: %f y: %f\n", current_x_cursor_pos, current_y_cursor_pos);
+    float currentXCursorPos = fmax(-1.0, fmin(1.0, screen_to_device_x_coordinate(xpos)));
+    float currentYCursorPos = fmax(-1.0, fmin(1.0, screen_to_device_y_coordinate(ypos)));
+    if (!drawZoomRectangle) {
+        zoomRectangleFirstX = currentXCursorPos;
+        zoomRectangleFirstY = currentYCursorPos;
+    } else {
+        zoomRectangleSecondX = currentXCursorPos;
+        zoomRectangleSecondY = currentYCursorPos;
+    }
+    calculateZoomRectangleCoords();
+    sendZoomRectangleCoords();
+
+    printf("cursor position x: %f y: %f\n", currentXCursorPos, currentYCursorPos);
 }
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) {
-            is_left_mouse_button_pressed = 1;
+            drawZoomRectangle = 1;
+            zoomRectangleSecondX = zoomRectangleFirstX;
+            zoomRectangleSecondY = zoomRectangleFirstY;
         }
         if (action == GLFW_RELEASE) {
-            is_left_mouse_button_pressed = 0;
+            // TODO: recalc camera corners and width
+            drawZoomRectangle = 0;
+            // if user wants to make another zoom from the spot he just finished
+            zoomRectangleFirstX = zoomRectangleSecondX;
+            zoomRectangleFirstY = zoomRectangleSecondY;
         }
+        calculateZoomRectangleCoords();
+        sendZoomRectangleCoords();
+        printf("%d\n", drawZoomRectangle);
     }
-    printf("%d\n", is_left_mouse_button_pressed);
 }
 
 int main(void) {
@@ -182,8 +252,13 @@ int main(void) {
 
     glUseProgram(shaderProgram);
 
-    GLint cameraCornerLocation = glGetUniformLocation(shaderProgram, "camera_corner");
-    GLint cameraWidthLocation = glGetUniformLocation(shaderProgram, "camera_width");
+    cameraCornerLocation = glGetUniformLocation(shaderProgram, "camera_corner");
+    cameraWidthLocation = glGetUniformLocation(shaderProgram, "camera_width");
+    zoomRectangleLeftLocation = glGetUniformLocation(shaderProgram, "zoom_rectangle_left_x");
+    zoomRectangleUpLocation = glGetUniformLocation(shaderProgram, "zoom_rectangle_up_y");
+    zoomRectangleRightLocation = glGetUniformLocation(shaderProgram, "zoom_rectangle_right_x");
+    zoomRectangleDownLocation = glGetUniformLocation(shaderProgram, "zoom_rectangle_down_y");
+    drawZoomRectangleLocation = glGetUniformLocation(shaderProgram, "draw_zoom_rectangle");
 
     glUniform2f(cameraCornerLocation, cameraCorner[0], cameraCorner[1]);
     glUniform1f(cameraWidthLocation, cameraWidth);
